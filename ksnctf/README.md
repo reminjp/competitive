@@ -7,7 +7,7 @@
 | # | Flag |
 |-|-|
 | 1 | FLAG_SRORGLnTh2Q5fTwu |
-| 2 |  |
+| 2 | FLAG_SwzgxBJSAMqwxxAU |
 | 3 |  |
 | 4 |  |
 | 5 |  |
