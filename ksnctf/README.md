@@ -5,7 +5,7 @@
 ## Flags
 
 | # | Flag |
-|-|-|
+|---|---|
 | 1 | FLAG_SRORGLnTh2Q5fTwu |
 | 2 | FLAG_SwzgxBJSAMqwxxAU |
 | 3 |  |
