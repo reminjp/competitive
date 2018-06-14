@@ -51,5 +51,4 @@ int main() {
   for (auto e : s) {
     cout << e << endl;
   }
-  return 0;
 }

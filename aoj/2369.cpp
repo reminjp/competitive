@@ -18,5 +18,4 @@ int main() {
   string s;
   cin >> s;
   cout << (parse(s, 0) == s.size() ? "Cat" : "Rabbit") << endl;
-  return 0;
 }

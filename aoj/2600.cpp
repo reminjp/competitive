@@ -31,5 +31,4 @@ int main() {
   bool rx = x.size() == 1 && x.front().first <= 0 && w <= x.front().second;
   bool ry = y.size() == 1 && y.front().first <= 0 && h <= y.front().second;
   cout << (rx || ry ? "Yes" : "No") << endl;
-  return 0;
 }

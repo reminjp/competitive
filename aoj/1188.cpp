@@ -37,5 +37,4 @@ int main() {
     p = 0;
     cout << parse() << endl;
   }
-  return 0;
 }

@@ -28,5 +28,4 @@ int main() {
     }
     cout << v.back().second << endl;
   }
-  return 0;
 }
