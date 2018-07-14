@@ -2,18 +2,14 @@
 using namespace std;
 typedef long long ll;
 
-void dfs(int n, string s, vector<map<string, ll>>& r, string a, string b) {
+void dfs(const string& s, map<pair<string, string>, ll>& r, string a, string b) {
   int i = a.size() + b.size();
-  if (i == n) {
-    reverse(begin(b), end(b));
-    r[a.size()][a + b]++;
+  if (i == s.size() / 2) {
+    r[{a, b}]++;
     return;
   }
-  a.push_back(s[i]);
-  dfs(n, s, r, a, b);
-  a.pop_back();
-  b.push_back(s[i]);
-  dfs(n, s, r, a, b);
+  dfs(s, r, a + s[i], b);
+  dfs(s, r, a, b + s[i]);
 }
 
 int main() {
@@ -21,16 +17,14 @@ int main() {
   string s;
   cin >> n >> s;
 
-  vector<map<string, ll>> u(n + 1), v(n + 1);
-  dfs(n, s, u, "", "");
+  map<pair<string, string>, ll> u, v;
+  dfs(s, u, "", "");
   reverse(begin(s), end(s));
-  dfs(n, s, v, "", "");
+  dfs(s, v, "", "");
 
   ll m = 0;
-  for (int i = 0; i < n + 1; i++) {
-    for (auto e : u[i]) {
-      m += e.second * v[i][e.first];
-    }
+  for (auto e : u) {
+    m += e.second * v[e.first];
   }
   cout << m << endl;
 }
