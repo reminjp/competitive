@@ -3,4 +3,6 @@ _*/
 *.out
 *.exe
 *.class
-*.txt
+in
+out
+diff
