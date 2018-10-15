@@ -52,9 +52,9 @@ Action Answer::decideNextAction(const Stage& aStage) {
     sort(order.begin(), order.end(), [&aStage](int a, int b) {
       auto pieceA = aStage.candidateLane(CandidateLaneType_Large).pieces()[a];
       auto pieceB = aStage.candidateLane(CandidateLaneType_Large).pieces()[b];
-      int sizeA = pieceA.requiredHeatTurnCount() * pieceA.height() * pieceA.width();
-      int sizeB = pieceB.requiredHeatTurnCount() * pieceB.height() * pieceB.width();
-      return sizeA != sizeB ? sizeA < sizeB : a < b;
+      int sizeA = pieceA.height() * pieceA.width();
+      int sizeB = pieceB.height() * pieceB.width();
+      return sizeA != sizeB ? sizeA > sizeB : a < b;
     });
 
     // 大きいクッキーを左上から詰めて置く。
@@ -88,7 +88,7 @@ Action Answer::decideNextAction(const Stage& aStage) {
     auto piece = reservedPieces.front().piece;
     reservedPieces.clear();
 
-    for (int i = 0, count = aStage.candidateLane(CandidateLaneType_Large).pieces().count(); i < count; i++) {
+    for (int i = 0; i < Parameter::CandidatePieceCount; i++) {
       auto& p = aStage.candidateLane(CandidateLaneType_Large).pieces()[i];
       if (p.width() == piece.width() && p.height() == piece.height() &&
           p.requiredHeatTurnCount() == piece.requiredHeatTurnCount() && p.score() == piece.score()) {
@@ -98,15 +98,28 @@ Action Answer::decideNextAction(const Stage& aStage) {
   }
 
   // 小さいクッキーを大きいクッキーと重ならない場所に置く。
-  for (int i = 0, count = aStage.candidateLane(CandidateLaneType_Small).pieces().count(); i < count; i++) {
-    auto piece = aStage.candidateLane(CandidateLaneType_Small).pieces()[i];
+  {
+    // よりスコアが高いクッキーを先に試すように並び替える。
+    std::vector<int> order(Parameter::CandidatePieceCount);
+    std::iota(begin(order), end(order), 0);
+    sort(order.begin(), order.end(), [&aStage](int a, int b) {
+      auto pieceA = aStage.candidateLane(CandidateLaneType_Small).pieces()[a];
+      auto pieceB = aStage.candidateLane(CandidateLaneType_Small).pieces()[b];
+      int scoreA = pieceA.score();
+      int scoreB = pieceB.score();
+      return scoreA != scoreB ? scoreA > scoreB : a < b;
+    });
 
-    Vector2i pos;
-    for (pos.y = 0; pos.y < Parameter::OvenHeight - piece.height() + 1; pos.y++) {
-      for (pos.x = 0; pos.x < Parameter::OvenWidth - piece.width() + 1; pos.x++) {
-        piece.setPos(pos);
-        if (aStage.oven().isAbleToPut(piece, pos) && !PieceWithTurn(piece, aStage.turn()).collides(reservedPieces)) {
-          return Action::Put(CandidateLaneType_Small, i, pos);
+    for (int i = 0; i < Parameter::CandidatePieceCount; i++) {
+      auto piece = aStage.candidateLane(CandidateLaneType_Small).pieces()[order[i]];
+
+      Vector2i pos;
+      for (pos.y = 0; pos.y < Parameter::OvenHeight - piece.height() + 1; pos.y++) {
+        for (pos.x = 0; pos.x < Parameter::OvenWidth - piece.width() + 1; pos.x++) {
+          piece.setPos(pos);
+          if (aStage.oven().isAbleToPut(piece, pos) && !PieceWithTurn(piece, aStage.turn()).collides(reservedPieces)) {
+            return Action::Put(CandidateLaneType_Small, order[i], pos);
+          }
         }
       }
     }
