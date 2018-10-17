@@ -30,15 +30,33 @@ struct PieceWithTurn {
   }
 };
 
+bool arePiecesHorizontal;
 std::vector<PieceWithTurn> reservedPieces;
 
 Answer::Answer() {}
 
 Answer::~Answer() {}
 
-void Answer::init(const Stage& aStage) { reservedPieces.clear(); }
+void Answer::init(const Stage& aStage) {
+  // auto recipe = aStage.candidateLane(CandidateLaneType_Large).recipe();
+  // arePiecesHorizontal = (recipe.foldPosRatioMin() + recipe.foldPosRatioTerm()) / 2.0 > 0.5;
+  reservedPieces.clear();
+}
 
 Action Answer::decideNextAction(const Stage& aStage) {
+  // 生地置き場にあるクッキーの形状を調べる。
+  {
+    int verticalPieceCount = 0;
+    for (auto type : {CandidateLaneType_Small, CandidateLaneType_Large}) {
+      for (int i = 0; i < Parameter::CandidatePieceCount; i++) {
+        auto& piece = aStage.candidateLane(type).pieces()[i];
+        verticalPieceCount += piece.width() < piece.height();
+      }
+    }
+    arePiecesHorizontal = verticalPieceCount < Parameter::CandidatePieceCount;
+  }
+
+  // オーブンにあるクッキーを読み取る。
   std::vector<PieceWithTurn> bakingPieces;
   for (auto piece : aStage.oven().bakingPieces()) {
     bakingPieces.push_back(PieceWithTurn(piece, aStage.turn() - piece.currentHeatTurnCount()));
@@ -58,8 +76,10 @@ Action Answer::decideNextAction(const Stage& aStage) {
     });
 
     // 大きいクッキーを左上から詰めて置く。
+    int putPieceCount = 0;
     std::vector<bool> isUsed(Parameter::CandidatePieceCount);
-    for (int t = aStage.turn(); t <= aStage.turn() + Parameter::GameTurnLimit; t++) {
+    for (int t = aStage.turn();
+         putPieceCount < Parameter::CandidatePieceCount && t <= aStage.turn() + Parameter::GameTurnLimit; t++) {
       bool didPut = false;
 
       for (int i = 0; !didPut && i < Parameter::CandidatePieceCount; i++) {
@@ -68,14 +88,26 @@ Action Answer::decideNextAction(const Stage& aStage) {
         }
         auto piece = aStage.candidateLane(CandidateLaneType_Large).pieces()[order[i]];
 
-        for (int y = 0; !didPut && y < Parameter::OvenHeight - piece.height() + 1; y++) {
+        auto func = [&](int x, int y) {
+          piece.setPos(Vector2i(x, y));
+          PieceWithTurn p(piece, t);
+          if (!p.collides(bakingPieces) && !p.collides(reservedPieces)) {
+            reservedPieces.push_back(p);
+            putPieceCount++;
+            isUsed[i] = true;
+            didPut = true;
+          }
+        };
+        if (arePiecesHorizontal) {
+          for (int y = 0; !didPut && y < Parameter::OvenHeight - piece.height() + 1; y++) {
+            for (int x = 0; !didPut && x < Parameter::OvenWidth - piece.width() + 1; x++) {
+              func(x, y);
+            }
+          }
+        } else {
           for (int x = 0; !didPut && x < Parameter::OvenWidth - piece.width() + 1; x++) {
-            piece.setPos(Vector2i(x, y));
-            PieceWithTurn p(piece, t);
-            if (!p.collides(bakingPieces) && !p.collides(reservedPieces)) {
-              reservedPieces.push_back(p);
-              isUsed[i] = true;
-              didPut = true;
+            for (int y = 0; !didPut && y < Parameter::OvenHeight - piece.height() + 1; y++) {
+              func(x, y);
             }
           }
         }
@@ -113,12 +145,26 @@ Action Answer::decideNextAction(const Stage& aStage) {
     for (int i = 0; i < Parameter::CandidatePieceCount; i++) {
       auto piece = aStage.candidateLane(CandidateLaneType_Small).pieces()[order[i]];
 
-      Vector2i pos;
-      for (pos.y = 0; pos.y < Parameter::OvenHeight - piece.height() + 1; pos.y++) {
-        for (pos.x = 0; pos.x < Parameter::OvenWidth - piece.width() + 1; pos.x++) {
-          piece.setPos(pos);
-          if (aStage.oven().isAbleToPut(piece, pos) && !PieceWithTurn(piece, aStage.turn()).collides(reservedPieces)) {
-            return Action::Put(CandidateLaneType_Small, order[i], pos);
+      if (arePiecesHorizontal) {
+        for (int y = 0; y < Parameter::OvenHeight - piece.height() + 1; y++) {
+          for (int x = 0; x < Parameter::OvenWidth - piece.width() + 1; x++) {
+            Vector2i pos = Vector2i(x, y);
+            piece.setPos(pos);
+            if (aStage.oven().isAbleToPut(piece, pos) &&
+                !PieceWithTurn(piece, aStage.turn()).collides(reservedPieces)) {
+              return Action::Put(CandidateLaneType_Small, order[i], pos);
+            }
+          }
+        }
+      } else {
+        for (int x = 0; x < Parameter::OvenWidth - piece.width() + 1; x++) {
+          for (int y = 0; y < Parameter::OvenHeight - piece.height() + 1; y++) {
+            Vector2i pos = Vector2i(x, y);
+            piece.setPos(pos);
+            if (aStage.oven().isAbleToPut(piece, pos) &&
+                !PieceWithTurn(piece, aStage.turn()).collides(reservedPieces)) {
+              return Action::Put(CandidateLaneType_Small, order[i], pos);
+            }
           }
         }
       }
