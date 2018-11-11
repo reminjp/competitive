@@ -5,10 +5,10 @@ constexpr int time_limit = 3000;
 
 class timer {
  public:
-  timer() { time_begin = std::chrono::system_clock::now(); }
+  timer() { time_begin = chrono::system_clock::now(); }
   int get() {
     auto time_end = chrono::system_clock::now();
-    return chrono::duration_cast<std::chrono::milliseconds>(time_end - time_begin).count();
+    return chrono::duration_cast<chrono::milliseconds>(time_end - time_begin).count();
   }
 
  private:
