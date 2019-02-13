@@ -23,9 +23,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
-VERSION  = "0.17"
+VERSION  = "0.20"
 REVISION = "a"
-VER_DATE = "20190124"
+VER_DATE = "20190213"
 
 SHOW_GRAPH = False
 SAVE_GRAPH = False
@@ -35,6 +35,8 @@ TIME_LIMIT = 10.0
 COLORS = ("lightgray", "r", "g", "lightblue", "m", "c", "y", "k")
 
 def read_response(player):
+    if player.time <= 0.0:
+        return None, 0.0
     start_time = time.time()
     class ExecThread(threading.Thread):
         def __init__(self, solver):
@@ -116,6 +118,8 @@ class Nodeless:
     def judge_init(self, responses):
         U = np.zeros((self.num_nodes, self.num_players), dtype=int)
         for uid, response in responses:
+            if uid in self.nodeless:
+                continue
             data = json.loads(response.decode("utf-8"))
             for pos in data["positions"]:
                 U[pos][uid] += 1
@@ -141,6 +145,14 @@ class Nodeless:
             src = data["src"]
             dst = data["dst"]
             num = data["num"]
+            if src < 0 or dst < 0:
+                print("Error: [%s] invalid unit: src, dst >= 0 (src=%d, dst=%d)" % (name, src, dst), file=sys.stderr)
+                self.nodeless.append(uid)
+                continue
+            if src >= self.num_nodes or dst >= self.num_nodes:
+                print("Error: [%s] invalid unit: src, dst < number of nodes (src=%d, dst=%d)" % (name, src, dst), file=sys.stderr)
+                self.nodeless.append(uid)
+                continue
             if self.G.node[src]["player"] != uid:
                 print("Error: [%s] invalid unit: node (%d) has no uid (%d)" % (name, src, uid), file=sys.stderr)
                 self.nodeless.append(uid)
@@ -228,9 +240,12 @@ class Nodeless:
                 response, player.time = read_response(player)
                 responses.append((player.uid, response))
                 if check_TLE(player):
-                    return False
+                    self.nodeless.append(player.uid)
+                    #return False
             except Exception as e:
+                self.nodeless.append(player.uid)
                 print(str(e), file=sys.stderr)
+                #return False
         self.judge_init(responses)
         self.judge_graph()
         self.show_score()
@@ -261,6 +276,8 @@ class Nodeless:
     def play(self):
         responses = []
         for player in self.players:
+            if player.uid in self.nodeless:
+                continue
             try:
                 response = None
                 if player.uid not in self.nodeless:
@@ -274,10 +291,12 @@ class Nodeless:
                     response, player.time = read_response(player)
                 responses.append((player.uid, response))
                 if check_TLE(player):
-                    return False
+                    self.nodeless.append(player.uid)
+                    #return False
             except Exception as e:
+                self.nodeless.append(player.uid)
                 print(str(e), file=sys.stderr)
-                return False
+                #return False
         self.judge_play(responses)
         self.judge_graph()
         self.show_score()
@@ -321,6 +340,11 @@ class Nodeless:
         SCORE_TABLE = range(self.num_players, 0, -1)
         print("### SCORES: {}".format(" | ".join(map(lambda xs: "{} {}".format(xs[1], SCORE_TABLE[xs[2]-1]), result))))
         quit_game(self.players)
+        if os.name == "posix":
+            for player in self.players:
+                pid = player.solver.pid
+                #os.system("kill -{}".format(pid))
+                os.system("pkill -TERM -P {}".format(pid))
 
 def main():
     global DEBUG_PRINT, SHOW_GRAPH, SAVE_GRAPH, TIME_LIMIT
