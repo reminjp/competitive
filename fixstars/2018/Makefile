@@ -13,4 +13,4 @@ pack: # pack my solver to submit
 	zip archive Makefile main.cpp json.hpp
 
 clean:
-	rm -f a.out akemi
+	rm -f a.out archive.zip akemi

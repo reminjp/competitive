@@ -1,5 +1,5 @@
 // remin's Nodeless Solver (C) 2018 remin
-// v1.0.0
+// v1.0.1
 
 #include <bits/stdc++.h>
 #include "json.hpp"
@@ -96,13 +96,20 @@ std::vector<int> Solver::initialize(const Graph& graph, const int uid, const int
   for (const auto& node : graph.nodes) {
     neighbor_counts.push_back({node.neighbors.size(), node.index});
   }
-  std::sort(std::begin(neighbor_counts), std::end(neighbor_counts));
+  // std::sort(std::begin(neighbor_counts), std::end(neighbor_counts));
   // auto it = std::upper_bound(std::begin(neighbor_counts), std::end(neighbor_counts), std::make_pair(unit_count, 0));
   // if (it != std::begin(neighbor_counts)) it--;
   // const auto& node_to_keep = graph.nodes[it->second];
+  std::sort(std::rbegin(neighbor_counts), std::rend(neighbor_counts));
   const auto& node_to_keep = graph.nodes[neighbor_counts.front().second];
-  for (int i = 0; i < unit_count; i++) {
-    positions.push_back(node_to_keep.neighbors[i % node_to_keep.neighbors.size()]);
+  if (node_to_keep.neighbors.size()) {
+    for (int i = 0; i < unit_count; i++) {
+      positions.push_back(node_to_keep.neighbors[i % node_to_keep.neighbors.size()]);
+    }
+  } else {
+    for (int i = 0; i < unit_count; i++) {
+      positions.push_back(i);
+    }
   }
 
   std::sort(std::begin(positions), std::end(positions));
@@ -154,7 +161,7 @@ Action Solver::update(const Graph& graph) {
         std::pair<int, int> score = {scores[j], -scores[i]};
         if (score > max_score) {
           max_score = score;
-          action = Action(i, j, graph.nodes[i].count);
+          action = Action(i, j, (graph.nodes[i].count - 1) / 2 + 1);
         }
       }
     }
