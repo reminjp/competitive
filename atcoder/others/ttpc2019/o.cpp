@@ -9,7 +9,7 @@ int main() {
   vector<vector<int>> p(n + 1);
   for (int k = 2; k < p.size(); k++) {
     int t = k;
-    for (int i = s / 2 - 2; i >= 2; i--) {
+    for (int i = s - 4; i >= 2; i--) {
       while (t % i == 0) {
         p[k].push_back(i);
         t /= i;
@@ -36,7 +36,7 @@ int main() {
   if (n - h != 0) {
     for (int i = 1; i < s - 1; i++) a[1][i] = a[s - 2][i] = a[i][s - 2] = '.';
     for (int i = 0; i < p[n - h].size(); i++) {
-      for (int j = 0; j < p[n - h][i]; j++) a[3 * i + 3][s - j - 2] = a[3 * i + 4][s - j - 2] = '.';
+      for (int j = 0; j < p[n - h][i]; j++) a[3 * (8 - i) + 3][s - j - 2] = a[3 * (8 - i) + 4][s - j - 2] = '.';
     }
   }
   a[1][1] = 'S';
