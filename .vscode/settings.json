@@ -64,6 +64,8 @@
     "optional": "cpp",
     "shared_mutex": "cpp",
     "string_view": "cpp",
-    "set": "cpp"
+    "set": "cpp",
+    "queue": "cpp",
+    "random": "cpp"
   }
 }
