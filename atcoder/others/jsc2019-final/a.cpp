@@ -8,27 +8,25 @@ int main() {
   for (auto &e : a) cin >> e;
   for (auto &e : b) cin >> e;
 
+  vector<int> r;
   map<int, pair<int, int>> p;
-
-  int x, y, z, w = -1;
-  for (int t = 0; t < 2e6; t++) {
-    int i = rand() % n, j = rand() % m;
-    if (p.count(a[i] + b[j])) {
-      if (p[a[i] + b[j]].first != i) {
-        x = p[a[i] + b[j]].first;
-        y = p[a[i] + b[j]].second;
-        z = i;
-        w = j;
-        break;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < m; j++) {
+      if (p.count(a[i] + b[j])) {
+        if (p[a[i] + b[j]].first != i) {
+          r = vector<int>{p[a[i] + b[j]].first, p[a[i] + b[j]].second, i, j};
+          break;
+        }
+      } else {
+        p[a[i] + b[j]] = make_pair(i, j);
       }
-    } else {
-      p[a[i] + b[j]] = make_pair(i, j);
     }
   }
 
-  if (w == -1) {
+  if (r.empty()) {
     cout << -1 << endl;
   } else {
-    cout << x << ' ' << y << ' ' << z << ' ' << w << ' ' << endl;
+    for (auto e : r) cout << e << ' ';
+    cout << endl;
   }
 }
