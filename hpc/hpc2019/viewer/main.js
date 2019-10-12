@@ -8,7 +8,7 @@ const vm = new Vue({
   data: {
     json: false, stage: 0, turn: 0,
     playType: 0, isPlay: false, timer: null, isDrag: false,
-    minColorTurn: 200, maxColorTurn: 500
+    minColorTurn: 100, maxColorTurn: 500
   },
   computed: {
     stages: function () { return this.json; },
@@ -47,7 +47,7 @@ const vm = new Vue({
     stageColor: function (no) {
       var d = 1 - (this.stages[no][5] - this.minColorTurn)/(this.maxColorTurn - this.minColorTurn);
       d = Math.min(Math.max(d, 0), 1);
-      return 'hsl(' + (d*120|0) + ', 100%, 50%)';
+      return 'hsl(' + (d*240|0) + ', 100%, 50%)';
     },
     fieldStyle: function () {
       return {

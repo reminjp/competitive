@@ -116,6 +116,7 @@ input[type="number"] {
 .stagebuttons {
   display: flex;
   flex-wrap: wrap;
+  width: 960px; /* 60 * 16px */
 }
 .stagebuttons > button {
   border: 2px solid;
