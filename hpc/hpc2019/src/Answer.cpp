@@ -114,7 +114,7 @@ void Answer::initialize(const Stage& aStage) {
   std::vector<Point> simulated_turtle_poss(turtle_poss.begin(), turtle_poss.end());
 
   // 高さ1のエサを分担して食べる
-  if (height_histogram[1] >= height_histogram.back() / 3) {
+  if (height_histogram[1] >= height_histogram.back() * 0.25) {
     std::vector<int> food_indices;
     food_indices.reserve(height_histogram[1]);
     for (int i = 0; i < food_count; i++) {
@@ -143,7 +143,7 @@ void Answer::initialize(const Stage& aStage) {
   }
 
   // 低いエサを分担して食べる
-  if (height_histogram[turtle_count / 2] >= height_histogram.back() / 2) {
+  if (height_histogram[turtle_count / 2] >= height_histogram.back() * 0.75) {
     // カメを左右に分ける
     std::vector<int> sorted_turtle_indices(turtle_count);
     std::iota(sorted_turtle_indices.begin(), sorted_turtle_indices.end(), 0);
@@ -157,19 +157,19 @@ void Answer::initialize(const Stage& aStage) {
 
     // エサを左右に分ける
     int height = turtle_count / 2;
-    std::vector<int> left_food_indices, right_food_indices;
-    left_food_indices.reserve(height_histogram[height]);
-    right_food_indices.reserve(height_histogram[height]);
+    std::vector<int> sorted_food_indices;
     for (int i = 0; i < food_count; i++) {
       if (!is_eaten[i] && foods[i].height() <= height) {
         is_eaten[i] = true;
-        if (foods[i].pos().x < Parameter::StageWidth / 2) {
-          left_food_indices.push_back(i);
-        } else {
-          right_food_indices.push_back(i);
-        }
+        sorted_food_indices.push_back(i);
       }
     }
+    std::sort(sorted_food_indices.begin(), sorted_food_indices.end(),
+              [&foods](int a, int b) { return foods[a].pos().x < foods[b].pos().x; });
+    std::vector<int> left_food_indices(sorted_food_indices.begin(),
+                                       sorted_food_indices.begin() + sorted_food_indices.size() / 2);
+    std::vector<int> right_food_indices(sorted_food_indices.begin() + sorted_food_indices.size() / 2,
+                                        sorted_food_indices.end());
 
     // 経路を最適化する
     if (!left_food_indices.empty()) {
