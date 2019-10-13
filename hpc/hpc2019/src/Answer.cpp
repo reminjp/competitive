@@ -55,7 +55,7 @@ void Answer::initialize(const Stage& aStage) {
   std::iota(order.begin(), order.end(), 0);
   std::sort(order.begin(), order.end(), [&foods](int a, int b) { return foods[a].pos().x < foods[b].pos().x; });
 
-  std::vector<int> indices(turtle_count), turns(turtle_count);
+  std::vector<int> indices(turtle_count), turns(turtle_count), next_turns(turtle_count);
   std::vector<Point> poss(turtle_count);
 
   int cost = INF;
@@ -82,11 +82,11 @@ void Answer::initialize(const Stage& aStage) {
       std::copy(turtle_poss.begin(), turtle_poss.end(), poss.begin());
       for (int i : order) {
         auto p = foods[i].pos();
-        std::sort(indices.begin(), indices.end(), [&turns, &poss, &p](int a, int b) {
-          return turns[a] + distance(poss[a], p) < turns[b] + distance(poss[b], p);
-        });
+        for (int j = 0; j < turtle_count; j++) next_turns[j] = turns[j] + distance(poss[j], p);
+        std::sort(indices.begin(), indices.end(),
+                  [&next_turns](int a, int b) { return next_turns[a] < next_turns[b]; });
         for (int j = 0, h = foods[i].height(); j < h; j++) {
-          turns[indices[j]] += distance(poss[indices[j]], p);
+          turns[indices[j]] = next_turns[indices[j]];
           poss[indices[j]] = p;
         }
       }
@@ -112,12 +112,11 @@ void Answer::initialize(const Stage& aStage) {
   std::copy(turtle_poss.begin(), turtle_poss.end(), poss.begin());
   for (int i : order) {
     auto p = foods[i].pos();
-    std::sort(indices.begin(), indices.end(), [&turns, &poss, &p](int a, int b) {
-      return turns[a] + distance(poss[a], p) < turns[b] + distance(poss[b], p);
-    });
+    for (int j = 0; j < turtle_count; j++) next_turns[j] = turns[j] + distance(poss[j], p);
+    std::sort(indices.begin(), indices.end(), [&next_turns](int a, int b) { return next_turns[a] < next_turns[b]; });
     for (int j = 0, h = foods[i].height(); j < h; j++) {
       routes[indices[j]].push_back(i);
-      turns[indices[j]] += distance(poss[indices[j]], p);
+      turns[indices[j]] = next_turns[indices[j]];
       poss[indices[j]] = p;
     }
   }
