@@ -51,15 +51,22 @@ void Answer::initialize(const Stage& aStage) {
   double stage_begin_secs = timer.ElapsedSecs();
   double stage_end_secs = stage_begin_secs + (TIME_LIMIT_SECS - stage_begin_secs) /
                                                  (Parameter::GameStageCount - stage_index) *
-                                                 (0.5 + 0.5 * ((stage_index + 1) / Parameter::GameStageCount));
+                                                 (0.4 + 0.6 * ((stage_index + 1) / Parameter::GameStageCount));
 
   for (auto& route : routes) {
     while (!route.empty()) route.pop();
   }
 
+  int height1_food_count = 0;
+  for (const auto& food : foods) {
+    if (food.height() == 1) height1_food_count++;
+  }
+
   std::vector<int> order(food_count);
   std::iota(order.begin(), order.end(), 0);
-  {
+  if (height1_food_count >= food_count * 0.25) {
+    std::sort(order.begin(), order.end(), [&foods](int a, int b) { return foods[a].pos().x < foods[b].pos().x; });
+  } else {
     Point p(Parameter::StageWidth / 2, Parameter::StageHeight / 2);
     for (int i = 0; i < food_count; ++i) {
       for (int j = i + 1; j < food_count; ++j) {
@@ -93,7 +100,7 @@ void Answer::initialize(const Stage& aStage) {
       std::rotate(order.begin() + l, order.begin() + (r - 1), order.begin() + r);
     }
 
-    int next_cost = INF;
+    int next_cost = 0;
     {
       std::fill(turns.begin(), turns.end(), 0);
       std::copy(turtle_poss.begin(), turtle_poss.end(), poss.begin());
@@ -105,7 +112,9 @@ void Answer::initialize(const Stage& aStage) {
         for (int j = 0, h = foods[i].height(); j < h; ++j) {
           turns[indices[j]] = next_turns[indices[j]];
           poss[indices[j]] = p;
+          if (next_turns[indices[j]] > next_cost) next_cost = next_turns[indices[j]];
         }
+        if (next_cost > cost) break;
       }
       next_cost = *std::max_element(turns.begin(), turns.end());
     }
