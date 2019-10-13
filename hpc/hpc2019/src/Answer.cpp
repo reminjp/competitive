@@ -62,9 +62,18 @@ void Answer::initialize(const Stage& aStage) {
   int iteration = 0;
   while (timer.ElapsedSecs() < stage_end_secs) {
     iteration++;
+    int operation = random.randTerm(3);
     int l = random.randTerm(food_count - 1);
     int r = random.randMinTerm(l + 2, food_count + 1);
-    std::reverse(order.begin() + l, order.begin() + r);
+    if (operation == 0) {
+      std::reverse(order.begin() + l, order.begin() + r);
+    } else if (operation == 1) {
+      // shift_left
+      std::rotate(order.begin() + l, order.begin() + (l + 1), order.begin() + r);
+    } else {
+      // shift_right
+      std::rotate(order.begin() + l, order.begin() + (r - 1), order.begin() + r);
+    }
 
     int next_cost = INF;
     {
@@ -87,7 +96,13 @@ void Answer::initialize(const Stage& aStage) {
     if (next_cost <= cost) {
       cost = next_cost;
     } else {
-      std::reverse(order.begin() + l, order.begin() + r);
+      if (operation == 0) {
+        std::reverse(order.begin() + l, order.begin() + r);
+      } else if (operation == 1) {
+        std::rotate(order.begin() + l, order.begin() + (r - 1), order.begin() + r);
+      } else {
+        std::rotate(order.begin() + l, order.begin() + (l + 1), order.begin() + r);
+      }
     }
   }
   // std::cerr << stage_index << ' ' << iteration << std::endl;
