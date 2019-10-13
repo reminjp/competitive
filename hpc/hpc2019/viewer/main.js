@@ -47,6 +47,7 @@ const vm = new Vue({
     stageColor: function (no) {
       var d = 1 - (this.stages[no][5] - this.minColorTurn)/(this.maxColorTurn - this.minColorTurn);
       d = Math.min(Math.max(d, 0), 1);
+      d = d < 1/2 ? 2*d*d : -2*(d-1)*(d-1)+1;
       return 'hsl(' + (d*240|0) + ', 100%, 50%)';
     },
     fieldStyle: function () {
