@@ -1,7 +1,6 @@
 #include "Answer.hpp"
 #include <algorithm>
 #include <array>
-#include <ctime>
 #include <iostream>
 #include <numeric>
 #include <queue>
@@ -9,39 +8,20 @@
 #include <vector>
 
 constexpr int INF = 1e5;
-constexpr double TIME_LIMIT_SECS = 60.0 - 0.025;
-
-class Timer {
- public:
-  Timer() : time_begin(std::clock()) {}
-  double ElapsedSecs() { return double(std::clock() - time_begin) / CLOCKS_PER_SEC; }
-
- private:
-  std::clock_t time_begin;
-};
 
 namespace hpc {
 Random random(RandomSeed::DefaultSeed());
-::Timer timer;
 int stage_index;
-// int iteration;
 std::array<std::queue<int>, Parameter::MaxTurtleCount> routes;
 
-// マンハッタン距離
-inline int distance(const Point& a, const Point& b) {
+inline int distance(Point a, Point b) {
   return (a.x < b.x ? b.x - a.x : a.x - b.x) + (a.y < b.y ? b.y - a.y : a.y - b.y);
 }
 
 // ゲーム開始前
-Answer::Answer() {
-  timer = ::Timer();
-  stage_index = 0;
-  // iteration = 0;
-}
+Answer::Answer() { stage_index = 0; }
 // ゲーム終了後
-Answer::~Answer() {
-  // std::cerr << "iteration: " << iteration << std::endl;
-}
+Answer::~Answer() {}
 
 // 各ステージ開始前
 void Answer::initialize(const Stage& aStage) {
@@ -57,133 +37,43 @@ void Answer::initialize(const Stage& aStage) {
     food_heights[i] = foods[i].height();
   }
 
-  double stage_begin_secs = timer.ElapsedSecs();
-  double stage_end_secs = stage_begin_secs + (TIME_LIMIT_SECS - stage_begin_secs) /
-                                                 (Parameter::GameStageCount - stage_index) *
-                                                 (0.4 + 0.6 * ((stage_index + 1) / Parameter::GameStageCount));
-
   for (auto& route : routes) {
     while (!route.empty()) route.pop();
   }
 
-  int height1_food_count = 0;
-  for (int h : food_heights) {
-    if (h == 1) height1_food_count++;
-  }
-
-  std::vector<int> order(food_count);
-  std::iota(order.begin(), order.end(), 0);
-  if (height1_food_count >= food_count * 0.25) {
-    std::sort(order.begin(), order.end(), [&food_poss](int a, int b) { return food_poss[a].x < food_poss[b].x; });
-  } else {
-    Point p(Parameter::StageWidth / 2, Parameter::StageHeight / 2);
-    for (int i = 0; i < food_count; ++i) {
-      for (int j = i + 1; j < food_count; ++j) {
-        if (distance(p, food_poss[order[i]]) > distance(p, food_poss[order[j]])) {
-          std::swap(order[i], order[j]);
-        }
-      }
-      p = food_poss[order[i]];
-    }
-  }
-
-  std::vector<int> indices(turtle_count), turns(turtle_count), next_turns(turtle_count);
-  std::vector<Point> poss(turtle_count);
+  std::vector<int> indices(turtle_count), turns(turtle_count, 0), next_turns(turtle_count), nearest_turtles;
+  std::vector<bool> is_eaten(food_count);
+  std::vector<Point> poss(turtle_poss.begin(), turtle_poss.end());
   std::iota(indices.begin(), indices.end(), 0);
+  nearest_turtles.reserve(turtle_count);
 
-  int cost = 0;
-  for (auto e : turtle_poss) cost += distance(e, food_poss[order.front()]);
-  for (int i = 0; i + 1 < turtle_count; ++i) cost += distance(food_poss[order[i]], food_poss[order[i + 1]]);
+  for (int i = 0; i < food_count; ++i) {
+    int nearest_food_index = 0, nearest_food_turn = INF;
+    nearest_turtles.clear();
 
-  if (height1_food_count >= food_count * 0.25) {
-    while (timer.ElapsedSecs() < stage_end_secs) {
-      // iteration++;
+    for (int fi = 0; fi < food_count; ++fi) {
+      if (is_eaten[fi]) continue;
+      for (int ti = 0; ti < turtle_count; ++ti) next_turns[ti] = turns[ti] + distance(poss[ti], food_poss[fi]);
+      std::sort(indices.begin(), indices.end(), [&next_turns](int a, int b) { return next_turns[a] < next_turns[b]; });
 
-      int operation = random.randTerm(3);
-      int l = random.randMinMax(0, food_count - 2);
-      int r = random.randMinMax(l + 2, food_count);
-
-      if (operation == 0) {
-        std::reverse(order.begin() + l, order.begin() + r);
-      } else if (operation == 1) {
-        // shift_left
-        std::rotate(order.begin() + l, order.begin() + (l + 1), order.begin() + r);
-      } else {
-        // shift_right
-        std::rotate(order.begin() + l, order.begin() + (r - 1), order.begin() + r);
+      int max_turn = 0;
+      for (auto it = indices.begin(); it != indices.begin() + food_heights[fi]; ++it) {
+        if (next_turns[*it] > max_turn) max_turn = next_turns[*it];
       }
 
-      int next_cost = 0;
-      {
-        std::fill(turns.begin(), turns.end(), 0);
-        std::copy(turtle_poss.begin(), turtle_poss.end(), poss.begin());
-        for (int i : order) {
-          auto p = food_poss[i];
-          for (int j = 0; j < turtle_count; ++j) next_turns[j] = turns[j] + distance(poss[j], p);
-          std::sort(indices.begin(), indices.end(),
-                    [&next_turns](int a, int b) { return next_turns[a] < next_turns[b]; });
-          for (int j = 0; j < food_heights[i]; ++j) {
-            turns[indices[j]] = next_turns[indices[j]];
-            poss[indices[j]] = p;
-            if (next_turns[indices[j]] > next_cost) next_cost = next_turns[indices[j]];
-          }
-          if (next_cost > cost) break;
-        }
-        next_cost = *std::max_element(turns.begin(), turns.end());
-      }
-
-      if (next_cost <= cost) {
-        cost = next_cost;
-      } else {
-        if (operation == 0) {
-          std::reverse(order.begin() + l, order.begin() + r);
-        } else if (operation == 1) {
-          std::rotate(order.begin() + l, order.begin() + (r - 1), order.begin() + r);
-        } else {
-          std::rotate(order.begin() + l, order.begin() + (l + 1), order.begin() + r);
-        }
+      if (max_turn < nearest_food_turn) {
+        nearest_food_index = fi;
+        nearest_food_turn = max_turn;
+        nearest_turtles.resize(food_heights[fi]);
+        std::copy(indices.begin(), indices.begin() + food_heights[fi], nearest_turtles.begin());
       }
     }
-  } else {
-    while (timer.ElapsedSecs() < stage_end_secs) {
-      // iteration++;
 
-      int l = random.randMinMax(0, food_count - 2);
-      int r = random.randMinMax(l + 2, food_count);
-
-      int delta_cost = 0;
-      if (l == 0) {
-        for (auto e : turtle_poss) {
-          delta_cost -= distance(e, food_poss[order[l]]);
-          delta_cost += distance(e, food_poss[order[r - 1]]);
-        }
-      } else {
-        delta_cost -= distance(foods[order[l - 1]].pos(), foods[order[l]].pos());
-        delta_cost += distance(foods[order[l - 1]].pos(), foods[order[r - 1]].pos());
-      }
-      if (r != food_count) {
-        delta_cost -= distance(foods[order[r - 1]].pos(), foods[order[r]].pos());
-        delta_cost += distance(foods[order[l]].pos(), foods[order[r]].pos());
-      }
-
-      if (delta_cost < 0) {
-        cost += delta_cost;
-        std::reverse(order.begin() + l, order.begin() + r);
-      }
-    }
-  }
-
-  std::iota(indices.begin(), indices.end(), 0);
-  std::fill(turns.begin(), turns.end(), 0);
-  std::copy(turtle_poss.begin(), turtle_poss.end(), poss.begin());
-  for (int i : order) {
-    auto p = food_poss[i];
-    for (int j = 0; j < turtle_count; ++j) next_turns[j] = turns[j] + distance(poss[j], p);
-    std::sort(indices.begin(), indices.end(), [&next_turns](int a, int b) { return next_turns[a] < next_turns[b]; });
-    for (int j = 0; j < food_heights[i]; ++j) {
-      routes[indices[j]].push(i);
-      turns[indices[j]] = next_turns[indices[j]];
-      poss[indices[j]] = p;
+    is_eaten[nearest_food_index] = true;
+    for (int ti : nearest_turtles) {
+      routes[ti].push(nearest_food_index);
+      turns[ti] = nearest_food_turn;
+      poss[ti] = food_poss[nearest_food_index];
     }
   }
 }
@@ -194,7 +84,7 @@ void Answer::setActions(const Stage& aStage, Actions& aActions) {
   int turtle_count = turtle_poss.count();
   for (int turtle_index = 0; turtle_index < turtle_count; ++turtle_index) {
     auto turtle_pos = turtle_poss[turtle_index];
-    Point target_food_pos = aStage.foods()[0].pos();
+    Point target_food_pos(INF, INF);
 
     while (!routes[turtle_index].empty()) {
       const auto& food = aStage.foods()[routes[turtle_index].front()];
