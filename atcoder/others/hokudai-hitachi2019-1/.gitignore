@@ -1,0 +1,6 @@
+*.in
+*.out
+/generator
+/output_checker
+/interactive.py
+/judge
