@@ -1,0 +1,5 @@
+/visualizer/
+*.in
+*.out
+/interactive.py
+/judge
