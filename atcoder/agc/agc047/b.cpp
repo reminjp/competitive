@@ -1,6 +1,5 @@
 #include <bits/stdc++.h>
 using namespace std;
-using ll = long long;
 
 int main() {
   int n;
@@ -13,27 +12,22 @@ int main() {
   }
   sort(s.begin(), s.end());
 
-  vector<vector<bitset<27>>> v;
-  for (const auto& e : s) {
-    vector<bitset<27>> ve(e.size() + 1);
-    for (int i = e.size() - 1; i >= 0; i--) {
-      ve[i][e[i] - '`'] = true;
-      ve[i] |= ve[i + 1];
+  vector<vector<bitset<27>>> v(n);
+  for (int i = 0; i < n; i++) {
+    int l = s[i].size();
+    v[i].resize(l + 1);
+    for (int j = l - 1; j >= 0; j--) {
+      v[i][j][s[i][j] - ('a' - 1)] = true;
+      v[i][j] |= v[i][j + 1];
     }
-    v.push_back(ve);
-
-    // cerr << e << endl;
   }
 
-  ll r = 0;
+  int r = 0;
   for (int i = 0; i < n; i++) {
     for (int j = i + 1; j < n; j++) {
-      int ni = s[i].size(), nj = s[j].size();
-      if (!(ni <= nj && s[i].substr(0, ni - 2) == s[j].substr(0, ni - 2))) break;
-      if (v[j][ni - 2][s[i].back() - '`']) {
-        r++;
-        // cerr << s[i] << ' ' << s[j] << endl;
-      }
+      int li = s[i].size(), lj = s[j].size();
+      if (li > lj || s[i].substr(0, li - 2) != s[j].substr(0, li - 2)) break;
+      if (v[j][li - 2][s[i].back() - ('a' - 1)]) r++;
     }
   }
   cout << r << endl;
