@@ -4,7 +4,10 @@
       "name": "WSL",
       "intelliSenseMode": "gcc-x64",
       "compilerPath": "/usr/bin/gcc",
-      "includePath": ["${workspaceFolder}/**"],
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/home/remin/ghq/github.com/atcoder/ac-library"
+      ],
       "defines": [],
       "cStandard": "c11",
       "cppStandard": "c++17"
