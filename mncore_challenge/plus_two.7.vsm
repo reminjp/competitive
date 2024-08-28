@@ -1,0 +1,7 @@
+imm i"2" $r1v2
+nop
+ladd $lm0v $lr0v $ln0v
+ladd $lm8v $lr0v $ln8v
+ladd $lm16v $lr0v $ln16v
+ladd $lm24v $lr0v $ln24v
+ladd $lm32v $lr0v $ln32v
